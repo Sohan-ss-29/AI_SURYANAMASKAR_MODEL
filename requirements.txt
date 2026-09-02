@@ -1,0 +1,9 @@
+tensorflow==2.21.0
+opencv-python
+mediapipe==0.10.10
+numpy
+pandas
+matplotlib
+scikit-learn
+Pillow
+pyttsx3

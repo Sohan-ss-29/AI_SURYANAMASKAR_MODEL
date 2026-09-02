@@ -1,0 +1,324 @@
+======================================================================
+CORRECTED DUPLICATE ANALYSIS
+======================================================================
+
+----------------------------------------------------------------------
+POSE: 1_Pranamasana
+----------------------------------------------------------------------
+Flagged duplicates : 165
+Accepted images    : 388
+
+druthi1_0007.jpg
+  Closest accepted : druthi1_0006.jpg
+  Distance         : 4
+
+druthi1_0012.jpg
+  Closest accepted : druthi1_0011.jpg
+  Distance         : 4
+
+druthi1_0019.jpg
+  Closest accepted : druthi1_0018.jpg
+  Distance         : 4
+
+druthi1_0020.jpg
+  Closest accepted : druthi1_0018.jpg
+  Distance         : 2
+
+druthi1_0023.jpg
+  Closest accepted : druthi1_0022.jpg
+  Distance         : 4
+
+druthi1_0026.jpg
+  Closest accepted : druthi1_0025.jpg
+  Distance         : 4
+
+druthi1_0029.jpg
+  Closest accepted : druthi1_0028.jpg
+  Distance         : 2
+
+druthi1_0030.jpg
+  Closest accepted : druthi1_0028.jpg
+  Distance         : 2
+
+druthi1_0031.jpg
+  Closest accepted : druthi1_0028.jpg
+  Distance         : 2
+
+druthi1_0032.jpg
+  Closest accepted : druthi1_0027.jpg
+  Distance         : 2
+
+druthi1_0035.jpg
+  Closest accepted : druthi1_0034.jpg
+  Distance         : 0
+
+druthi1_0036.jpg
+  Closest accepted : druthi1_0034.jpg
+  Distance         : 4
+
+druthi1_0038.jpg
+  Closest accepted : druthi1_0037.jpg
+  Distance         : 4
+
+druthi1_0039.jpg
+  Closest accepted : druthi1_0010.jpg
+  Distance         : 4
+
+druthi1_0042.jpg
+  Closest accepted : druthi1_0041.jpg
+  Distance         : 4
+
+Distance distribution:
+Distance 0: 2
+Distance 1: 0
+Distance 2: 69
+Distance 3: 0
+Distance 4: 94
+Distance 5: 0
+Distance 6: 0
+Distance 7: 0
+Distance 8: 0
+Distance 9: 0
+Distance 10: 0
+
+Minimum distance : 0
+Maximum distance : 4
+Average distance : 3.12
+
+----------------------------------------------------------------------
+POSE: 2_Hasta_Uttanasana
+----------------------------------------------------------------------
+Flagged duplicates : 22
+Accepted images    : 437
+
+22.jpg
+  Closest accepted : 20.jpg
+  Distance         : 0
+
+druthi2_0015.jpg
+  Closest accepted : druthi2_0014.jpg
+  Distance         : 2
+
+druthi2_0019.jpg
+  Closest accepted : druthi2_0018.jpg
+  Distance         : 2
+
+druthi3_0012.jpg
+  Closest accepted : druthi3_0011.jpg
+  Distance         : 4
+
+druthi4_0008.jpg
+  Closest accepted : druthi4_0007.jpg
+  Distance         : 2
+
+druthi4_0010.jpg
+  Closest accepted : druthi4_0009.jpg
+  Distance         : 4
+
+druthi4_0014.jpg
+  Closest accepted : druthi4_0013.jpg
+  Distance         : 4
+
+druthi4_0015.jpg
+  Closest accepted : druthi4_0013.jpg
+  Distance         : 2
+
+druthi4_0016.jpg
+  Closest accepted : druthi4_0013.jpg
+  Distance         : 2
+
+druthi4_0020.jpg
+  Closest accepted : druthi4_0019.jpg
+  Distance         : 4
+
+druthi4_0027.jpg
+  Closest accepted : druthi4_0026.jpg
+  Distance         : 4
+
+druthi4_0029.jpg
+  Closest accepted : druthi4_0028.jpg
+  Distance         : 4
+
+druthi4_0030.jpg
+  Closest accepted : druthi4_0028.jpg
+  Distance         : 4
+
+druthi5_0005.jpg
+  Closest accepted : druthi5_0004.jpg
+  Distance         : 4
+
+druthi5_0007.jpg
+  Closest accepted : druthi5_0006.jpg
+  Distance         : 2
+
+Distance distribution:
+Distance 0: 1
+Distance 1: 0
+Distance 2: 7
+Distance 3: 0
+Distance 4: 14
+Distance 5: 0
+Distance 6: 0
+Distance 7: 0
+Distance 8: 0
+Distance 9: 0
+Distance 10: 0
+
+Minimum distance : 0
+Maximum distance : 4
+Average distance : 3.18
+
+----------------------------------------------------------------------
+POSE: 3_Padahastasana
+----------------------------------------------------------------------
+Flagged duplicates : 6
+Accepted images    : 285
+
+9.jpg
+  Closest accepted : 12.jpg
+  Distance         : 0
+
+Standing_Forward_Bend_pose_or_Uttanasana__image_189.jpg
+  Closest accepted : Standing_Forward_Bend_pose_or_Uttanasana__image_18.jpg
+  Distance         : 0
+
+Standing_Forward_Bend_pose_or_Uttanasana__image_211.jpg
+  Closest accepted : Standing_Forward_Bend_pose_or_Uttanasana__image_180.jpg
+  Distance         : 0
+
+Standing_Forward_Bend_pose_or_Uttanasana__image_264.jpg
+  Closest accepted : Standing_Forward_Bend_pose_or_Uttanasana__image_156.jpg
+  Distance         : 0
+
+Standing_Forward_Bend_pose_or_Uttanasana__image_37.jpg
+  Closest accepted : Standing_Forward_Bend_pose_or_Uttanasana__image_223.jpg
+  Distance         : 2
+
+Standing_Forward_Bend_pose_or_Uttanasana__image_41.jpg
+  Closest accepted : Standing_Forward_Bend_pose_or_Uttanasana__image_132.jpg
+  Distance         : 0
+
+Distance distribution:
+Distance 0: 5
+Distance 1: 0
+Distance 2: 1
+Distance 3: 0
+Distance 4: 0
+Distance 5: 0
+Distance 6: 0
+Distance 7: 0
+Distance 8: 0
+Distance 9: 0
+Distance 10: 0
+
+Minimum distance : 0
+Maximum distance : 2
+Average distance : 0.33
+
+----------------------------------------------------------------------
+POSE: 6_Ashtanga_Namaskara
+----------------------------------------------------------------------
+Flagged duplicates : 123
+Accepted images    : 326
+
+druthi2_0045.jpg
+  Closest accepted : druthi2_0044.jpg
+  Distance         : 4
+
+druthi2_0052.jpg
+  Closest accepted : druthi2_0051.jpg
+  Distance         : 4
+
+druthi2_0068.jpg
+  Closest accepted : druthi2_0067.jpg
+  Distance         : 4
+
+druthi2_0069.jpg
+  Closest accepted : druthi2_0067.jpg
+  Distance         : 4
+
+druthi2_0070.jpg
+  Closest accepted : druthi2_0067.jpg
+  Distance         : 4
+
+druthi2_0074.jpg
+  Closest accepted : druthi2_0073.jpg
+  Distance         : 4
+
+druthi2_0075.jpg
+  Closest accepted : druthi2_0072.jpg
+  Distance         : 4
+
+druthi2_0076.jpg
+  Closest accepted : druthi2_0072.jpg
+  Distance         : 4
+
+druthi2_0077.jpg
+  Closest accepted : druthi2_0072.jpg
+  Distance         : 4
+
+druthi2_0079.jpg
+  Closest accepted : druthi2_0078.jpg
+  Distance         : 2
+
+druthi2_0080.jpg
+  Closest accepted : druthi2_0078.jpg
+  Distance         : 2
+
+druthi2_0081.jpg
+  Closest accepted : druthi2_0078.jpg
+  Distance         : 2
+
+druthi2_0082.jpg
+  Closest accepted : druthi2_0078.jpg
+  Distance         : 4
+
+druthi2_0083.jpg
+  Closest accepted : druthi2_0078.jpg
+  Distance         : 4
+
+druthi3_0003.jpg
+  Closest accepted : druthi3_0002.jpg
+  Distance         : 4
+
+Distance distribution:
+Distance 0: 5
+Distance 1: 0
+Distance 2: 50
+Distance 3: 0
+Distance 4: 68
+Distance 5: 0
+Distance 6: 0
+Distance 7: 0
+Distance 8: 0
+Distance 9: 0
+Distance 10: 0
+
+Minimum distance : 0
+Maximum distance : 4
+Average distance : 3.02
+
+======================================================================
+OVERALL DUPLICATE ANALYSIS
+======================================================================
+Total flagged duplicates: 316
+
+Distance distribution:
+Distance 0: 13
+Distance 1: 0
+Distance 2: 127
+Distance 3: 0
+Distance 4: 176
+Distance 5: 0
+Distance 6: 0
+Distance 7: 0
+Distance 8: 0
+Distance 9: 0
+Distance 10: 0
+
+Minimum distance : 0
+Maximum distance : 4
+Average distance : 3.03
+
+No files were deleted or modified.
+======================================================================

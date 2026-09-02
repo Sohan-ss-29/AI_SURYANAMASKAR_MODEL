@@ -1,0 +1,41 @@
+# Datasets
+suryanamaskar_dataset/
+clean_dataset/
+dataset_split/
+
+# Videos
+videos/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TensorFlow / trained models
+*.h5
+*.keras
+*.ckpt
+checkpoint/
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Dataset review images
+review/
