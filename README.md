@@ -2,13 +2,13 @@
 
 An AI-powered computer vision system for recognizing and evaluating **Surya Namaskara yoga postures** using deep learning, pose estimation, and real-time feedback.
 
-The project combines **MobileNetV2-based image classification** with **MediaPipe Pose landmark analysis** to recognize yoga poses and eventually provide posture correction, sequence tracking, and visual/voice feedback.
+The project combines **MobileNetV2-based image classification** with **MediaPipe Pose landmark analysis** to recognize yoga poses and eventually provide posture correction, sequence tracking, accuracy scoring, and visual/voice feedback.
 
 ---
 
 ## 📌 Project Overview
 
-Surya Namaskara is a sequence of yoga postures that requires correct body alignment and controlled movement. Incorrect posture during the sequence can reduce its effectiveness and may increase the risk of strain.
+Surya Namaskara is a sequence of yoga postures that requires correct body alignment and controlled movement. Incorrect posture during the sequence can reduce its effectiveness and may increase the risk of physical strain.
 
 This project aims to develop an AI-based system capable of:
 
@@ -60,7 +60,7 @@ The current model recognizes **7 major Surya Namaskara postures**.
 
 ---
 
-## 🏗️ System Architecture
+# 🏗️ System Architecture
 
 ```text
 Input Image / Video
@@ -103,30 +103,54 @@ The project uses a combination of **publicly available yoga images** and **custo
 
 ### Dataset Sources
 
-- Selected yoga posture images from publicly available datasets
+- Selected images from the Yoga-82 dataset
 - Custom videos recorded to increase the number and diversity of examples for selected poses
 
-Frames extracted from custom videos were prepared for compatibility with the MobileNetV2 input pipeline.
-
-### Dataset Statistics
-
-The original dataset contained:
-
-```text
-2,233 raw images
-```
-
-After preprocessing and cleaning:
-
-```text
-2,188 clean images
-```
-
-Therefore, a total of **45 images** were excluded from the final clean dataset.
+Custom video frames were extracted and resized to **224 × 224 pixels** for compatibility with the MobileNetV2 input pipeline.
 
 ---
 
-## 🧹 Dataset Preprocessing
+## Dataset Statistics
+
+### Raw Dataset
+
+**2,233 images**
+
+### Clean Dataset
+
+**2,188 images**
+
+### Removed Images
+
+| Category | Images Removed |
+|---|---:|
+| Blurry images | 17 |
+| No-pose images | 15 |
+| Exact duplicate images | 13 |
+| **Total removed** | **45** |
+
+Therefore:
+
+**2,233 − 45 = 2,188 clean images**
+
+---
+
+## Final Class Distribution
+
+| Class | Pose | Images |
+|:---:|---|---:|
+| 1 | Pranamasana | 550 |
+| 2 | Hasta Uttanasana | 431 |
+| 3 | Padahastasana | 286 |
+| 4 | Ashwa Sanchalanasana | 161 |
+| 5 | Parvatasana | 199 |
+| 6 | Ashtanga Namaskara | 440 |
+| 7 | Bhujangasana | 121 |
+| | **Total** | **2,188** |
+
+---
+
+# 🧹 Dataset Preprocessing
 
 A preprocessing pipeline was developed to improve dataset quality before model training.
 
@@ -155,40 +179,32 @@ Clean Dataset
 Group-Aware Dataset Split
 ```
 
-### Cleaning Pipeline
-
-The preprocessing system checks for:
+The preprocessing pipeline checks for:
 
 - Blurry images
 - Duplicate images
 - Images where a valid human pose cannot be detected
 - Invalid or unreadable image files
 
-The original dataset is **never modified or deleted** during the cleaning process.
-
-Suspicious samples are copied into review directories for inspection.
+The original dataset is preserved during preprocessing. Suspicious samples are placed into review directories rather than directly deleting the original data.
 
 ---
 
-## 🔍 Blur Detection
+# 🔍 Blur Detection
 
-Blur detection is applied selectively to poses where image sharpness needs automated validation.
+Blur detection was used to identify images with insufficient visual sharpness.
 
-After inspection of the dataset, blur checking was intentionally disabled for certain poses where the available images were considered usable despite characteristics that could trigger conventional blur-detection thresholds.
+After the preprocessing and review process:
 
-Final blurry images excluded:
-
-```text
-17 images
-```
+**17 blurry images were excluded from the clean dataset.**
 
 ---
 
-## 🧍 MediaPipe Pose Validation
+# 🧍 MediaPipe Pose Validation
 
-MediaPipe Pose is used during preprocessing to detect whether sufficient human body information is present in an image.
+MediaPipe Pose was used as a validation step to determine whether sufficient human body landmark information was available in an image.
 
-The validation logic is intentionally designed to be **permissive rather than requiring near-perfect landmark visibility**, because valid yoga images may contain:
+The validation logic was designed to be permissive because valid yoga images may contain:
 
 - Partially hidden limbs
 - Unusual body orientations
@@ -196,99 +212,58 @@ The validation logic is intentionally designed to be **permissive rather than re
 - Side views
 - Difficult joint visibility
 
-Final no-pose images excluded:
+After validation:
 
-```text
-15 images
-```
+**15 images were excluded because sufficient pose information could not be detected.**
 
 ---
 
-## ♻️ Duplicate Detection
+# ♻️ Duplicate Analysis
 
-Perceptual hashing is used to analyze visually similar images.
+A perceptual-hash-based duplicate analysis was performed on the dataset.
 
-The initial duplicate detector flagged:
+## Potential Duplicates
 
-```text
-316 potential duplicates
-```
+**316 images** were flagged for duplicate analysis.
 
-These were further analyzed using perceptual-hash distance.
+### pHash Distance Distribution
 
-Distribution of the flagged images:
+| pHash Distance | Number of Images | Interpretation |
+|:---:|---:|---|
+| 0 | 13 | Exact duplicates |
+| 2 | 127 | Near duplicates |
+| 4 | 176 | Near duplicates |
 
-| pHash Distance | Images |
-|:---:|---:|
-| 0 | 13 |
-| 2 | 127 |
-| 4 | 176 |
+### Duplicate Handling Strategy
 
-Only **distance = 0** images were treated as exact duplicates for final removal.
+Only images with a pHash distance of **0** were treated as exact duplicates and removed.
 
-Near-duplicate frames were retained because they may contain meaningful differences in:
+Near-duplicate images were retained because they may represent meaningful variations in:
 
-- Body alignment
-- Limb position
-- Camera perspective
+- Body position
 - Movement
+- Camera position
 - Lighting
-- Posture transition
+- Background
+- Posture transitions
 
-Final exact duplicates excluded:
+### Final Duplicate Removal
 
-```text
-13 images
-```
-
----
-
-## ✅ Final Clean Dataset
-
-Cleaning summary:
-
-| Category | Images |
-|---|---:|
-| Raw images | 2,233 |
-| Blurry removed | 17 |
-| No-pose removed | 15 |
-| Exact duplicates removed | 13 |
-| **Final clean images** | **2,188** |
-
-### Class Distribution
-
-| Pose | Images |
-|---|---:|
-| Pranamasana | 550 |
-| Hasta Uttanasana | 431 |
-| Padahastasana | 286 |
-| Ashwa Sanchalanasana | 161 |
-| Parvatasana | 199 |
-| Ashtanga Namaskara | 440 |
-| Bhujangasana | 121 |
-| **Total** | **2,188** |
+**13 exact duplicate images were removed.**
 
 ---
 
 # 🔀 Dataset Splitting
 
-The clean dataset is divided into:
+The final clean dataset contains:
 
-- **Training set — 70%**
-- **Validation set — approximately 15%**
-- **Test set — approximately 15%**
+**2,188 images**
 
-A **strict global group-aware splitting strategy** is used for frames extracted from custom videos.
+The dataset was divided into:
 
-This is important because consecutive frames originating from the same video can be extremely similar.
-
-Allowing frames from the same video to appear in both training and testing data could produce **data leakage** and artificially inflate model performance.
-
-Therefore:
-
-> Frames belonging to the same source video are assigned to only one dataset split.
-
-### Final Dataset Split
+- Training
+- Validation
+- Testing
 
 | Split | Images |
 |---|---:|
@@ -299,29 +274,68 @@ Therefore:
 
 ---
 
-## 🔒 Video Leakage Verification
+## Group-Aware Dataset Splitting
 
-A dedicated verification script checks whether any custom-video group appears across multiple dataset splits.
+Custom-video frames were grouped according to their source video.
 
-The final split successfully passes the leakage check:
+All frames originating from the same video were assigned to **only one dataset split**.
+
+This prevents visually similar consecutive frames from the same video from appearing in both training and testing datasets.
+
+This strategy was implemented to reduce **data leakage** and provide a more reliable estimate of model generalization.
+
+---
+
+# 🔒 Video Leakage Verification
+
+A dedicated verification script was used to check whether frames from the same custom video appeared in multiple dataset splits.
+
+### Verification Output
 
 ```text
-NO VIDEO GROUP LEAKAGE FOUND
+======================================================================
+DATASET LEAKAGE CHECK
+======================================================================
+
+✅ NO VIDEO GROUP LEAKAGE FOUND
+
+Video groups checked: 11
+======================================================================
 ```
 
-A total of **11 custom video groups** were verified.
+### Result
 
-This ensures that the held-out test dataset provides a more realistic measurement of model generalization.
+**11 custom video groups were checked.**
+
+**No video group appeared across multiple dataset splits.**
+
+Therefore, the final dataset split passed the implemented video-group leakage verification.
 
 ---
 
 # 🧠 Deep Learning Model
 
-The project currently uses **MobileNetV2 with transfer learning**.
+The project uses **MobileNetV2 with transfer learning**.
 
 MobileNetV2 is initialized using **ImageNet pretrained weights** and adapted to classify the seven Surya Namaskara poses.
 
-### Model Architecture
+---
+
+## Model Configuration
+
+| Parameter | Configuration |
+|---|---|
+| Model | MobileNetV2 |
+| Pretrained weights | ImageNet |
+| Input size | 224 × 224 × 3 |
+| Number of classes | 7 |
+| Total parameters | 2,266,951 |
+| Framework | TensorFlow / Keras |
+| TensorFlow version | 2.21.0 |
+
+---
+
+## Model Architecture
 
 ```text
 Input Image
@@ -350,55 +364,57 @@ Classification Head
 7-Class Softmax Output
 ```
 
-The trained model contains approximately:
+---
 
-```text
-2.27 million parameters
-```
+# 🏋️ Training Strategy
+
+Training was performed using a **two-stage transfer-learning approach**.
+
+## Stage 1 — Transfer Learning
+
+The pretrained MobileNetV2 feature extractor was initially frozen.
+
+The newly added classification layers were trained for the seven Surya Namaskara classes.
+
+### Best Stage 1 Validation Accuracy
+
+**89.42%**
 
 ---
 
-## 🚀 Training Strategy
+## Stage 2 — Fine-Tuning
 
-Training is performed using a **two-stage transfer-learning strategy**.
+Selected deeper MobileNetV2 layers were subsequently unfrozen and trained using a smaller learning rate.
 
-### Stage 1 — Transfer Learning
+The fine-tuning stage was completed successfully.
 
-The pretrained MobileNetV2 feature extractor is initially frozen.
+However, fine-tuning did not improve upon the best Stage 1 validation accuracy.
 
-Only the newly added classification layers are trained on the Surya Namaskara dataset.
+### Experimental Conclusion
 
-This allows the model to reuse general visual features learned from ImageNet.
+> Stage 1 transfer learning achieved the best validation accuracy of **89.42%**. Subsequent fine-tuning did not produce an improvement beyond this value.
 
-### Stage 2 — Fine-Tuning
-
-Selected deeper MobileNetV2 layers are unfrozen.
-
-Training then continues using a smaller learning rate so that the pretrained features can adapt more specifically to Surya Namaskara postures without aggressively modifying previously learned representations.
+This result is retained as an experimental observation.
 
 ---
 
 # 📈 Model Evaluation
 
-The trained model was evaluated using the completely held-out test dataset containing:
+The trained model was evaluated using the completely held-out test dataset.
 
-```text
-344 images
-```
+### Test Dataset
 
-### Current Test Performance
+**344 images**
 
-| Metric | Result |
-|---|---:|
-| **Test Accuracy** | **82.56%** |
-| Weighted Precision | 85.84% |
-| Weighted Recall | 82.56% |
-| Weighted F1-score | 82.57% |
-| Macro Precision | 76.07% |
-| Macro Recall | 79.18% |
-| Macro F1-score | 75.91% |
+### Overall Test Accuracy
 
-### Per-Class Performance
+# **82.56%**
+
+This represents the current baseline performance of the seven-class Surya Namaskara classifier on the held-out test dataset.
+
+---
+
+## Per-Class Performance
 
 | Pose | Precision | Recall | F1-Score |
 |---|---:|---:|---:|
@@ -410,15 +426,57 @@ The trained model was evaluated using the completely held-out test dataset conta
 | Ashtanga Namaskara | 100.00% | 56.06% | 71.84% |
 | Bhujangasana | 47.83% | 61.11% | 53.66% |
 
-The current model therefore establishes a **baseline test accuracy of 82.56%**.
+---
 
-Further error analysis and model optimization are planned, particularly for classes with lower precision or recall.
+## Aggregate Metrics
+
+| Metric | Result |
+|---|---:|
+| **Test Accuracy** | **82.56%** |
+| Macro Precision | 76.07% |
+| Macro Recall | 79.18% |
+| Macro F1-Score | 75.91% |
+| Weighted Precision | 85.84% |
+| Weighted Recall | 82.56% |
+| Weighted F1-Score | 82.57% |
 
 ---
 
-## 🔬 Planned Error Analysis
+# 🔬 Current Model Observations
 
-Before finalizing the classifier, further analysis will include:
+The model performs particularly well on **Pranamasana**:
+
+- Precision: **99.14%**
+- Recall: **100.00%**
+- F1-score: **99.57%**
+
+However, some classes require further investigation.
+
+### Bhujangasana
+
+- Precision: **47.83%**
+- Recall: **61.11%**
+- F1-score: **53.66%**
+
+### Ashwa Sanchalanasana
+
+- Precision: **55.26%**
+- Recall: **87.50%**
+- F1-score: **67.74%**
+
+### Ashtanga Namaskara
+
+- Precision: **100.00%**
+- Recall: **56.06%**
+- F1-score: **71.84%**
+
+These results indicate that visually similar postures and class imbalance may require further analysis and model improvement.
+
+---
+
+# 🔬 Planned Error Analysis
+
+The next model-analysis stage will include:
 
 - Confusion matrix visualization
 - Inspection of incorrectly classified test images
@@ -427,7 +485,7 @@ Before finalizing the classifier, further analysis will include:
 - Evaluation of additional augmentation strategies
 - Potential additional fine-tuning
 
-The goal is to improve generalization while preserving the strict no-video-leakage evaluation methodology.
+The objective is to improve generalization while maintaining the strict no-video-leakage evaluation methodology.
 
 ---
 
@@ -463,7 +521,7 @@ Sequence Tracking
 Visual / Voice Feedback
 ```
 
-The planned system will combine **pose classification** with **landmark-based posture analysis** rather than relying only on image classification.
+The final system is intended to combine **image classification** with **landmark-based posture analysis** rather than relying only on image classification.
 
 ---
 
@@ -528,40 +586,38 @@ AI_SURYANAMASKAR_MODEL/
 ├── inference/
 │
 ├── models/
-│   └── *.keras                 # Local trained models
+│   └── *.keras
 │
 ├── reports/
 │   └── dataset_report.csv
 │
-├── suryanamaskar_dataset/     # Local raw dataset
-├── clean_dataset/             # Local cleaned dataset
-├── dataset_split/             # Local train/val/test data
-└── videos/                    # Local custom videos
+├── suryanamaskar_dataset/     # Local raw dataset, not committed
+├── clean_dataset/             # Local cleaned dataset, not committed
+├── dataset_split/             # Local train/val/test data, not committed
+└── videos/                    # Local custom videos, not committed
 ```
 
-Large datasets, videos, generated splits, and trained model files can be excluded from the repository through `.gitignore`.
+Large datasets, videos, generated splits, and trained model files are excluded from Git using `.gitignore`.
 
 ---
 
 # ⚙️ Installation
 
-### 1. Clone the Repository
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Sohan-ss-29/AI_SURYANAMASKAR_MODEL.git
 cd AI_SURYANAMASKAR_MODEL
 ```
 
-### 2. Create a Python Environment
-
-Using Conda:
+## 2. Create the Python Environment
 
 ```bash
 conda create -n yoga python=3.11
 conda activate yoga
 ```
 
-### 3. Install Dependencies
+## 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -571,7 +627,7 @@ pip install -r requirements.txt
 
 # 📂 Dataset Setup
 
-The image datasets and custom videos are intentionally excluded from the Git repository because of their size.
+The raw datasets and custom videos are intentionally excluded from the Git repository because of their size.
 
 The expected local directories are:
 
@@ -582,27 +638,27 @@ dataset_split/
 videos/
 ```
 
-The preprocessing scripts can then be used to reproduce the cleaning and dataset preparation pipeline.
+The preprocessing scripts can be used to reproduce the cleaning and dataset preparation pipeline.
 
 ---
 
-# 🧹 Running Preprocessing
+# 🧹 Preprocessing Commands
 
 Run commands from the project root.
 
-### Create the Clean Dataset
+## Create the Clean Dataset
 
 ```bash
 python preprocessing/create_clean_dataset.py
 ```
 
-### Create the Group-Aware Split
+## Create the Group-Aware Dataset Split
 
 ```bash
 python preprocessing/split_dataset.py
 ```
 
-### Verify Video Leakage
+## Verify Video Leakage
 
 ```bash
 python preprocessing/verify_split.py
@@ -616,7 +672,7 @@ NO VIDEO GROUP LEAKAGE FOUND
 
 ---
 
-# 🏋️ Training
+# 🏋️ Model Training
 
 Train the MobileNetV2 classifier using:
 
@@ -624,13 +680,17 @@ Train the MobileNetV2 classifier using:
 python training/train_mobilenetv2.py
 ```
 
-The training pipeline uses transfer learning followed by fine-tuning.
+The training pipeline uses:
+
+1. Transfer learning
+2. Classification-head training
+3. Fine-tuning of selected MobileNetV2 layers
 
 ---
 
 # 🧪 Model Evaluation
 
-Evaluate the saved model against the held-out test dataset using:
+Evaluate the saved model using:
 
 ```bash
 python training/evaluate_model.py
@@ -647,34 +707,223 @@ Test accuracy : 82.56%
 
 # 📌 Current Project Status
 
-### ✅ Completed
+## ✅ Completed
 
-- [x] Initial dataset collection
-- [x] Custom video frame extraction
-- [x] Dataset cleaning pipeline
+- [x] Problem definition and planning
+- [x] Dataset collection
+- [x] Custom video collection
+- [x] Video frame extraction
+- [x] Dataset cleaning
 - [x] Blur analysis
 - [x] Duplicate analysis
 - [x] Exact duplicate removal
 - [x] MediaPipe pose validation
-- [x] Clean dataset generation
-- [x] Strict global group-aware dataset splitting
+- [x] Clean dataset creation
+- [x] Group-aware dataset splitting
 - [x] Video leakage verification
-- [x] MobileNetV2 transfer learning
-- [x] MobileNetV2 fine-tuning
+- [x] MobileNetV2 implementation
+- [x] Transfer learning
+- [x] Fine-tuning experiment
 - [x] Test-set evaluation
 - [x] Baseline test accuracy established — **82.56%**
 
-### 🔄 Next Steps
+## 🔄 In Progress / Next
 
-- [ ] Generate confusion matrix visualization
-- [ ] Analyze misclassified test images
-- [ ] Improve weaker pose classes
-- [ ] Finalize optimized classification model
+- [ ] Confusion matrix visualization
+- [ ] Misclassification/error analysis
+- [ ] Model improvement/iteration
 - [ ] Real-time webcam inference
-- [ ] Surya Namaskara sequence tracking
-- [ ] MediaPipe-based posture correctness analysis
+- [ ] MediaPipe posture correctness analysis
+- [ ] Surya Namaskara sequence/FSM integration
+- [ ] Posture accuracy scoring
 - [ ] Visual correction feedback
 - [ ] Voice feedback integration
+- [ ] Full system integration
+- [ ] Final system testing
+- [ ] Final documentation
+- [ ] Final presentation / PPT
+
+---
+
+# 📊 Overall Project Completion
+
+## Current Estimated Completion
+
+# **Approximately 65–70%**
+
+This is an approximate project-progress estimate based on the current implementation status.
+
+The machine-learning classification pipeline has reached a functional baseline:
+
+```text
+Dataset
+   ↓
+Cleaning
+   ↓
+Validation
+   ↓
+Leakage-Safe Splitting
+   ↓
+MobileNetV2 Training
+   ↓
+Fine-Tuning
+   ↓
+Held-Out Test Evaluation
+   ↓
+82.56% Test Accuracy
+```
+
+The remaining major work is primarily focused on integrating the trained classifier with the real-time posture-analysis system.
+
+---
+
+# 🗺️ Project Development Timeline
+
+```text
+Phase 1
+Problem Definition & Planning
+        │
+        ▼
+Phase 2
+Dataset Collection
+        │
+        ▼
+Phase 3
+Custom Video Collection & Frame Extraction
+        │
+        ▼
+Phase 4
+Dataset Cleaning & Validation
+        │
+        ▼
+Phase 5
+Duplicate Analysis
+        │
+        ▼
+Phase 6
+Group-Aware Dataset Splitting
+        │
+        ▼
+Phase 7
+Video Leakage Verification
+        │
+        ▼
+Phase 8
+MobileNetV2 Transfer Learning
+        │
+        ▼
+Phase 9
+Fine-Tuning
+        │
+        ▼
+Phase 10
+Held-Out Test Evaluation
+        │
+        ▼
+        ⭐ CURRENT STAGE
+        │
+        ▼
+Phase 11
+Confusion Matrix & Error Analysis
+        │
+        ▼
+Phase 12
+Model Improvement
+        │
+        ▼
+Phase 13
+Real-Time Webcam Integration
+        │
+        ▼
+Phase 14
+MediaPipe Posture Analysis
+        │
+        ▼
+Phase 15
+Sequence / FSM Integration
+        │
+        ▼
+Phase 16
+Visual & Voice Feedback
+        │
+        ▼
+Phase 17
+Final System Testing
+        │
+        ▼
+Phase 18
+Final Documentation & Presentation
+```
+
+---
+
+# 📝 Important Technical Notes
+
+## Model Checkpoint
+
+The trained model was successfully saved as a Keras model checkpoint.
+
+An initial model-loading issue occurred because the first training version stored MobileNetV2 preprocessing inside a Keras Lambda layer.
+
+The existing trained checkpoint was successfully loaded by explicitly providing the MobileNetV2 `preprocess_input` function through Keras `custom_objects`.
+
+For future training, preprocessing was changed to a serializable Keras `Rescaling` layer to avoid the same serialization issue.
+
+## Current Model Status
+
+The current trained model is considered:
+
+**Baseline Model — v1**
+
+It is not yet considered the final production model.
+
+---
+
+# 📚 Evaluation Evidence
+
+The following artifacts and results have been generated during development:
+
+- Dataset cleaning report
+- Dataset statistics
+- Duplicate analysis results
+- Clean dataset statistics
+- Group-aware dataset split
+- Video leakage verification output
+- MobileNetV2 training logs
+- Saved model checkpoint
+- Test-set classification report
+- Confusion matrix data
+- Preprocessing scripts
+- Dataset split verification scripts
+- Model evaluation script
+
+These artifacts can be used as supporting evidence during project evaluations, final documentation, and presentation preparation.
+
+---
+
+# 🎯 Current Milestone
+
+## Milestone Completed
+
+A leakage-safe, cleaned seven-class Surya Namaskara dataset has been prepared and successfully used to train and evaluate a MobileNetV2 transfer-learning classifier.
+
+### Current Baseline
+
+**82.56% test accuracy on 344 held-out test images.**
+
+---
+
+# 🚀 Next Major Milestone
+
+Integrate the trained classifier with:
+
+1. Real-time webcam input
+2. MediaPipe Pose landmark detection
+3. Posture correctness analysis
+4. Accuracy scoring
+5. Surya Namaskara sequence tracking
+6. Visual correction feedback
+7. Voice feedback
 
 ---
 
@@ -690,7 +939,7 @@ Potential improvements include:
 - Improving robustness to lighting and background changes
 - Combining classification confidence with MediaPipe landmark geometry
 - Adding temporal analysis across consecutive video frames
-- Implementing full Surya Namaskara sequence recognition
+- Implementing complete Surya Namaskara sequence recognition
 - Optimizing the trained model for real-time inference
 - Deploying the system as a desktop, mobile, or web application
 
@@ -704,7 +953,7 @@ The system provides computer-vision-based posture analysis and feedback and shou
 
 ---
 
-## 👨‍💻 Author
+# 👨‍💻 Author
 
 **Sohan Suhas**
 
