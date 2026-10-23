@@ -1,9 +1,9 @@
+# TensorFlow training, evaluation, and real-time classifier environment
+# MediaPipe dependencies are kept separately in requirements-vision.txt.
 tensorflow==2.21.0
 opencv-python
-mediapipe==0.10.10
 numpy
 pandas
 matplotlib
 scikit-learn
 Pillow
-pyttsx3
