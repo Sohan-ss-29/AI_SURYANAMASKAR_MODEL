@@ -242,7 +242,7 @@ Use Python 3.11 and install the TensorFlow-side packages:
 conda create -n yoga python=3.11
 conda activate yoga
 python -m pip install --upgrade pip
-python -m pip install tensorflow==2.21.0 opencv-python numpy pandas matplotlib scikit-learn Pillow
+python -m pip install -r requirements.txt
 ```
 
 This is the environment for MobileNetV2 training, evaluation, and real-time classifier inference. Native Windows TensorFlow may run on CPU depending on the machine and TensorFlow build.
@@ -255,10 +255,10 @@ Open a separate terminal:
 conda create -n yoga_clean python=3.11
 conda activate yoga_clean
 python -m pip install --upgrade pip
-python -m pip install mediapipe==0.10.10 opencv-python numpy Pillow ImageHash
+python -m pip install -r requirements-vision.txt
 ```
 
-This environment is intended for the MediaPipe Pose demo and MediaPipe-dependent preprocessing tools. Some preprocessing scripts may need additional packages depending on which script is run; install those in this environment if required.
+This environment is intended for the MediaPipe Pose demo and MediaPipe-dependent preprocessing tools. The `ImageHash` dependency is included because duplicate-analysis and cleaning scripts import `imagehash`.
 
 ### 4. Dataset and model files
 
