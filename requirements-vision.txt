@@ -1,0 +1,6 @@
+# MediaPipe landmark analysis and MediaPipe-dependent preprocessing
+mediapipe==0.10.10
+opencv-python
+numpy
+Pillow
+ImageHash
