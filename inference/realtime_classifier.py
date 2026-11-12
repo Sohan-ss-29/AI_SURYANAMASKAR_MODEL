@@ -9,7 +9,10 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 # CONFIGURATION
 # ============================================================
 
-MODEL_PATH = "models/suryanamaskar_mobilenetv2_best.keras"
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODEL_PATH = PROJECT_ROOT / "models" / "suryanamaskar_mobilenetv2_best.keras"
 
 CLASS_NAMES = [
     "1_Pranamasana",
@@ -55,6 +58,17 @@ cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("❌ Could not open webcam.")
     raise SystemExit
+
+cv2.namedWindow(
+    "Surya Namaskara - Real-Time Classifier",
+    cv2.WINDOW_NORMAL
+)
+
+cv2.setWindowProperty(
+    "Surya Namaskara - Real-Time Classifier",
+    cv2.WND_PROP_FULLSCREEN,
+    cv2.WINDOW_FULLSCREEN
+)
 
 
 print("\n✅ Webcam started")

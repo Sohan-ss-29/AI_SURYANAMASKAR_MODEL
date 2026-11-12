@@ -25,6 +25,17 @@ if not cap.isOpened():
     print("❌ Could not open webcam.")
     raise SystemExit
 
+cv2.namedWindow(
+    "MediaPipe Bilateral Joint Analysis",
+    cv2.WINDOW_NORMAL
+)
+
+cv2.setWindowProperty(
+    "MediaPipe Bilateral Joint Analysis",
+    cv2.WND_PROP_FULLSCREEN,
+    cv2.WINDOW_FULLSCREEN
+)
+
 
 print("✅ Webcam started")
 print("Press 'q' to quit.")
