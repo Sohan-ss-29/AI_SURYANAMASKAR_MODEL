@@ -90,7 +90,7 @@ def calculate_real_time_features(landmarks, mp_pose):
     # Angles
     # --------------------------------------------------------
 
-    from posture_utils import calculate_angle_if_visible
+    from .posture_utils import calculate_angle_if_visible
 
     left_elbow = calculate_angle_if_visible(
         landmarks,
