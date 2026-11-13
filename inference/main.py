@@ -9,6 +9,7 @@ import time
 from posture_validator import validate_pose
 from realtime_features import calculate_real_time_features
 from sequence_controller import SequenceController
+from session_manager import SessionManager
 
 
 # ============================================================
@@ -178,6 +179,17 @@ sequence_controller = SequenceController(
     wrong_pose_frames=WRONG_POSE_FRAMES,
     hold_grace_time=HOLD_GRACE_TIME
 )
+
+
+# ============================================================
+# SESSION MANAGER
+# ============================================================
+
+session_manager = SessionManager(
+    BASE_DIR
+)
+
+session_saved = False
 
 
 # ============================================================
@@ -476,6 +488,24 @@ while True:
 
 
         # ====================================================
+        # SAVE COMPLETED SESSION
+        # ====================================================
+
+        if (
+            sequence_state == "complete"
+            and not session_saved
+        ):
+
+            session = session_manager.save_session()
+
+            session_manager.print_final_report(
+                session
+            )
+
+            session_saved = True
+
+
+        # ====================================================
         # SAVE COMPLETED POSE SCORE
         # ====================================================
 
@@ -497,6 +527,13 @@ while True:
                 average_score = 0.0
 
             step_scores[completed_step] = (
+                average_score
+            )
+
+            # Save this completed pose into session history
+
+            session_manager.record_pose(
+                completed_step,
                 average_score
             )
 
@@ -1226,6 +1263,13 @@ while True:
         current_step_score_count = 0
 
         overall_score = 0.0
+
+        # Reset session history tracking
+        # for the new workout.
+
+        session_manager.reset()
+
+        session_saved = False
 
         print(
             "\nSequence reset to Pose 1."
