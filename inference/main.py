@@ -8,18 +8,23 @@ import time
 
 from posture_validator import validate_pose
 from realtime_features import calculate_real_time_features
+from sequence_controller import SequenceController
 
 
 # ============================================================
 # PATHS
 # ============================================================
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
 
 MODEL_PATH = os.path.join(
     BASE_DIR,
     "models",
-    "suryanamaskar_mobilenetv2_best.keras"
+    "suryanamaskar_mobilenetv2_savedmodel"
 )
 
 
@@ -50,20 +55,21 @@ print("Model:", MODEL_PATH)
 
 try:
 
-    model = tf.keras.models.load_model(
-        MODEL_PATH,
-        custom_objects={
-            "preprocess_input": tf.keras.applications.mobilenet_v2.preprocess_input
-        }
+    model = tf.saved_model.load(
+        MODEL_PATH
     )
+
+    inference_fn = model.signatures[
+        "serving_default"
+    ]
 
 except Exception as e:
 
-    print("\nERROR loading model:")
+    print("\nERROR loading SavedModel:")
     print(e)
     sys.exit(1)
 
-print("Model loaded successfully.")
+print("SavedModel loaded successfully.")
 
 
 # ============================================================
@@ -89,6 +95,7 @@ pose_detector = mp_pose.Pose(
 cap = cv2.VideoCapture(0)
 
 if not cap.isOpened():
+
     print("ERROR: Cannot open webcam.")
     sys.exit(1)
 
@@ -97,7 +104,9 @@ if not cap.isOpened():
 # WINDOW
 # ============================================================
 
-WINDOW_NAME = "Surya Namaskara - Posture Correction"
+WINDOW_NAME = (
+    "Surya Namaskara - Posture Correction"
+)
 
 cv2.namedWindow(
     WINDOW_NAME,
@@ -115,10 +124,73 @@ cv2.setWindowProperty(
 # SETTINGS
 # ============================================================
 
-CLASSIFICATION_THRESHOLD = 0.50
+# ------------------------------------------------------------
+# Classification threshold
+#
+# This is intentionally lower than a normal classifier
+# confidence threshold because the sequence controller
+# and posture validator provide additional validation.
+# ------------------------------------------------------------
 
-previous_pose = None
-pose_change_time = time.time()
+CLASSIFICATION_THRESHOLD = 0.35
+
+
+# ------------------------------------------------------------
+# Hold settings
+# ------------------------------------------------------------
+
+HOLD_TIME = 2.0
+
+HOLD_GRACE_TIME = 0.8
+
+WRONG_POSE_FRAMES = 4
+
+
+# ============================================================
+# FEEDBACK DISPLAY SETTINGS
+# ============================================================
+
+# ------------------------------------------------------------
+# This controls ONLY how long a non-holding feedback message
+# remains visible on the screen.
+#
+# It does NOT change:
+# - classifier
+# - posture validation
+# - sequence controller
+# - hold timer
+# - grace period
+# - wrong pose detection
+#
+# The internal system still processes every frame normally.
+# ------------------------------------------------------------
+
+FEEDBACK_MIN_DISPLAY_TIME = 1.0
+
+
+# ============================================================
+# SEQUENCE CONTROLLER
+# ============================================================
+
+sequence_controller = SequenceController(
+    total_poses=12,
+    hold_time=HOLD_TIME,
+    wrong_pose_frames=WRONG_POSE_FRAMES,
+    hold_grace_time=HOLD_GRACE_TIME
+)
+
+
+# ============================================================
+# FEEDBACK DISPLAY STATE
+# ============================================================
+
+# This stores the message currently shown to the user.
+
+last_feedback = ""
+
+# Time at which the current displayed message started.
+
+last_feedback_time = 0.0
 
 
 # ============================================================
@@ -127,53 +199,106 @@ pose_change_time = time.time()
 
 while True:
 
+    # ========================================================
+    # READ FRAME
+    # ========================================================
+
     ret, frame = cap.read()
 
     if not ret:
-        print("ERROR: Cannot read webcam frame.")
+
+        print(
+            "ERROR: Cannot read webcam frame."
+        )
+
         break
 
-    # --------------------------------------------------------
-    # Mirror webcam
-    # --------------------------------------------------------
 
-    frame = cv2.flip(frame, 1)
+    # ========================================================
+    # MIRROR WEBCAM
+    # ========================================================
+
+    frame = cv2.flip(
+        frame,
+        1
+    )
 
     display = frame.copy()
 
-    # --------------------------------------------------------
-    # MediaPipe
-    # --------------------------------------------------------
+
+    # ========================================================
+    # MEDIAPIPE
+    # ========================================================
 
     rgb = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB
     )
 
-    results = pose_detector.process(rgb)
+    results = pose_detector.process(
+        rgb
+    )
 
-    # --------------------------------------------------------
-    # Default values
-    # --------------------------------------------------------
 
-    predicted_pose = "Unknown"
+    # ========================================================
+    # DEFAULT VALUES
+    # ========================================================
+
+    raw_pose = None
+
+    raw_pose_name = "Unknown"
+
     confidence = 0.0
 
     posture_valid = False
+
     posture_score = 0.0
 
-    correction = "No pose detected"
+    correction = ""
 
-    # --------------------------------------------------------
-    # If body detected
-    # --------------------------------------------------------
+    sequence_state = "waiting"
+
+    sequence_feedback = ""
+
+
+    # ========================================================
+    # GET CURRENT EXPECTED POSE
+    # ========================================================
+
+    expected_pose_id = (
+        sequence_controller.get_expected_pose()
+    )
+
+    # Safety check in case the session is complete.
+
+    if expected_pose_id is not None:
+
+        expected_pose_name = (
+            POSE_NAMES[
+                expected_pose_id - 1
+            ]
+        )
+
+    else:
+
+        expected_pose_name = (
+            "Completed"
+        )
+
+
+    # ========================================================
+    # BODY DETECTED
+    # ========================================================
 
     if results.pose_landmarks:
 
-        landmarks = results.pose_landmarks.landmark
+        landmarks = (
+            results.pose_landmarks.landmark
+        )
+
 
         # ====================================================
-        # DRAW SKELETON
+        # DRAW MEDIAPIPE SKELETON
         # ====================================================
 
         mp_drawing.draw_landmarks(
@@ -181,6 +306,7 @@ while True:
             results.pose_landmarks,
             mp_pose.POSE_CONNECTIONS
         )
+
 
         # ====================================================
         # MOBILE NET CLASSIFICATION
@@ -196,17 +322,28 @@ while True:
             cv2.COLOR_BGR2RGB
         )
 
-        img = img.astype(np.float32)
+        img = img.astype(
+            np.float32
+        )
 
         img = np.expand_dims(
             img,
             axis=0
         )
 
-        prediction = model.predict(
-            img,
-            verbose=0
-        )[0]
+
+        # ====================================================
+        # SAVEDMODEL INFERENCE
+        # ====================================================
+
+        prediction = inference_fn(
+            input_image=tf.constant(img)
+        )["output_0"].numpy()[0]
+
+
+        # ====================================================
+        # HIGHEST PROBABILITY CLASS
+        # ====================================================
 
         class_index = int(
             np.argmax(prediction)
@@ -216,49 +353,372 @@ while True:
             prediction[class_index]
         )
 
-        if confidence >= CLASSIFICATION_THRESHOLD:
 
-            predicted_pose = POSE_NAMES[class_index]
+        # ====================================================
+        # RAW CLASSIFIER RESULT
+        # ====================================================
+
+        raw_pose_name = (
+            POSE_NAMES[
+                class_index
+            ]
+        )
+
+
+        # ====================================================
+        # CLASSIFICATION THRESHOLD
+        # ====================================================
+
+        if (
+            confidence >=
+            CLASSIFICATION_THRESHOLD
+        ):
+
+            raw_pose = (
+                class_index + 1
+            )
 
         else:
 
-            predicted_pose = "Unknown"
+            raw_pose = None
+
 
         # ====================================================
-        # GEOMETRIC VALIDATION
+        # POSTURE VALIDATION
         # ====================================================
 
-        if predicted_pose != "Unknown":
+        # Validate only when the classifier currently
+        # agrees with the expected sequence pose.
 
-            features = calculate_real_time_features(
-                landmarks,
-                mp_pose
+        if (
+            raw_pose ==
+            expected_pose_id
+        ):
+
+            features = (
+                calculate_real_time_features(
+                    landmarks,
+                    mp_pose
+                )
             )
 
-            validation = validate_pose(
-                features,
-                predicted_pose
+            validation = (
+                validate_pose(
+                    features,
+                    expected_pose_name
+                )
             )
 
-            posture_valid = validation["valid"]
+            posture_valid = (
+                validation["valid"]
+            )
 
-            posture_score = validation["score"]
+            posture_score = (
+                validation["score"]
+            )
 
-            correction = validation["message"]
+            correction = (
+                validation["message"]
+            )
+
 
         # ====================================================
-        # POSE CHANGE DETECTION
+        # SEQUENCE CONTROLLER
         # ====================================================
 
-        if predicted_pose != previous_pose:
+        sequence_result = (
+            sequence_controller.update(
+                raw_pose,
+                posture_valid
+            )
+        )
 
-            previous_pose = predicted_pose
-            pose_change_time = time.time()
+        sequence_state = (
+            sequence_result["state"]
+        )
+
+        sequence_feedback = (
+            sequence_result["message"]
+        )
+
+
+        # ====================================================
+        # USER FEEDBACK
+        # ====================================================
+
+        # ----------------------------------------------------
+        # EXPECTED POSE BUT POSTURE NEEDS ADJUSTMENT
+        # ----------------------------------------------------
+
+        if (
+            sequence_state ==
+            "correct_pose_adjust"
+        ):
+
+            if correction:
+
+                sequence_feedback = (
+                    correction
+                )
+
+            else:
+
+                sequence_feedback = (
+                    f"Adjust your posture "
+                    f"for Pose "
+                    f"{expected_pose_id}."
+                )
+
+
+        # ----------------------------------------------------
+        # CORRECT POSTURE / HOLDING
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "holding"
+        ):
+
+            hold_elapsed = (
+                sequence_result[
+                    "hold_elapsed"
+                ]
+            )
+
+            sequence_feedback = (
+                f"Good! Hold Pose "
+                f"{expected_pose_id} "
+                f"for "
+                f"{hold_elapsed:.1f} / "
+                f"{HOLD_TIME:.1f} sec"
+            )
+
+
+        # ----------------------------------------------------
+        # POSE COMPLETED
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "pose_complete"
+        ):
+
+            sequence_feedback = (
+                sequence_result[
+                    "message"
+                ]
+            )
+
+
+        # ----------------------------------------------------
+        # WRONG POSE
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "wrong_pose"
+        ):
+
+            sequence_feedback = (
+                f"WRONG POSE! "
+                f"Pose {expected_pose_id} "
+                f"should be performed here."
+            )
+
+
+        # ----------------------------------------------------
+        # TEMPORARY DETECTION LOSS
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "waiting"
+        ):
+
+            sequence_feedback = (
+                sequence_result[
+                    "message"
+                ]
+            )
+
+
+        # ----------------------------------------------------
+        # CHECKING
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "checking"
+        ):
+
+            sequence_feedback = (
+                sequence_result[
+                    "message"
+                ]
+            )
+
+
+        # ----------------------------------------------------
+        # SESSION COMPLETE
+        # ----------------------------------------------------
+
+        elif (
+            sequence_state ==
+            "complete"
+        ):
+
+            sequence_feedback = (
+                "Excellent! "
+                "Surya Namaskara "
+                "completed."
+            )
+
+
+    # ========================================================
+    # NO BODY DETECTED
+    # ========================================================
 
     else:
 
-        predicted_pose = "Unknown"
-        correction = "Step into the camera."
+        raw_pose = None
+
+        raw_pose_name = (
+            "Unknown"
+        )
+
+        confidence = 0.0
+
+        posture_valid = False
+
+        posture_score = 0.0
+
+        sequence_result = (
+            sequence_controller.update(
+                None,
+                False
+            )
+        )
+
+        sequence_state = (
+            sequence_result[
+                "state"
+            ]
+        )
+
+        # If there is no person in the camera,
+        # keep the instruction simple.
+
+        sequence_feedback = (
+            "Step into the camera."
+        )
+
+
+    # ========================================================
+    # STABILIZE DISPLAYED FEEDBACK
+    # ========================================================
+
+    # IMPORTANT:
+    #
+    # The sequence controller still changes every frame.
+    #
+    # We only prevent the TEXT displayed to the user from
+    # changing every frame.
+    #
+    # This means messages such as:
+    #
+    #   "Perform Step 2."
+    #   "Checking..."
+    #   "Wrong pose!"
+    #
+    # will no longer rapidly replace each other.
+    #
+    # The holding message is allowed to update continuously
+    # because its timer needs to increase.
+    #
+    # ========================================================
+
+    current_time = (
+        time.perf_counter()
+    )
+
+
+    # --------------------------------------------------------
+    # HOLDING
+    #
+    # Always update holding message because the timer must
+    # remain live.
+    # --------------------------------------------------------
+
+    if (
+        sequence_state ==
+        "holding"
+    ):
+
+        last_feedback = (
+            sequence_feedback
+        )
+
+        last_feedback_time = (
+            current_time
+        )
+
+
+    # --------------------------------------------------------
+    # IMPORTANT EVENTS
+    #
+    # These should appear immediately.
+    # --------------------------------------------------------
+
+    elif sequence_state in (
+        "pose_complete",
+        "complete",
+        "correct_pose_adjust"
+    ):
+
+        last_feedback = (
+            sequence_feedback
+        )
+
+        last_feedback_time = (
+            current_time
+        )
+
+
+    # --------------------------------------------------------
+    # NORMAL / TRANSIENT MESSAGES
+    #
+    # Only allow a new message to replace the current displayed
+    # message after the minimum display time has passed.
+    # --------------------------------------------------------
+
+    elif (
+        sequence_feedback !=
+        last_feedback
+    ):
+
+        if (
+            current_time -
+            last_feedback_time
+        ) >= (
+            FEEDBACK_MIN_DISPLAY_TIME
+        ):
+
+            last_feedback = (
+                sequence_feedback
+            )
+
+            last_feedback_time = (
+                current_time
+            )
+
+
+    # --------------------------------------------------------
+    # USE THE STABILIZED MESSAGE
+    # --------------------------------------------------------
+
+    sequence_feedback = (
+        last_feedback
+    )
 
 
     # ========================================================
@@ -267,58 +727,114 @@ while True:
 
     h, w = display.shape[:2]
 
-    # --------------------------------------------------------
-    # Top title
-    # --------------------------------------------------------
+
+    # ========================================================
+    # TEXT POSITIONS
+    # ========================================================
+
+    x = 40
+
+    y_title = 60
+    y_step = 110
+    y_expected = 150
+    y_detected = 190
+    y_score = 230
+    y_status = 285
+    y_feedback = 340
+
+
+    # ========================================================
+    # TITLE
+    # ========================================================
 
     cv2.putText(
         display,
         "SURYA NAMASKARA",
-        (40, 60),
+        (x, y_title),
         cv2.FONT_HERSHEY_SIMPLEX,
         1.2,
         (255, 255, 255),
         3
     )
 
-    # --------------------------------------------------------
-    # Pose
-    # --------------------------------------------------------
 
-    pose_text = f"Pose: {predicted_pose}"
+    # ========================================================
+    # STEP
+    # ========================================================
 
-    cv2.putText(
-        display,
-        pose_text,
-        (40, 115),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.9,
-        (255, 255, 255),
-        2
+    expected_step = (
+        sequence_controller.get_expected_step()
     )
 
-    # --------------------------------------------------------
-    # Confidence
-    # --------------------------------------------------------
-
-    confidence_text = (
-        f"Classification confidence: "
-        f"{confidence * 100:.1f}%"
+    step_text = (
+        f"Step {expected_step} / 12"
     )
 
     cv2.putText(
         display,
-        confidence_text,
-        (40, 155),
+        step_text,
+        (x, y_step),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        0.85,
         (255, 255, 255),
         2
     )
 
-    # --------------------------------------------------------
-    # Posture score
-    # --------------------------------------------------------
+
+    # ========================================================
+    # EXPECTED POSE
+    # ========================================================
+
+    expected_pose_text = (
+        f"Expected: "
+        f"{expected_pose_name}"
+    )
+
+    cv2.putText(
+        display,
+        expected_pose_text,
+        (x, y_expected),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.72,
+        (255, 255, 255),
+        2
+    )
+
+
+    # ========================================================
+    # DETECTED POSE
+    # ========================================================
+
+    if raw_pose is not None:
+
+        detected_text = (
+            f"Detected: "
+            f"{raw_pose_name} "
+            f"({confidence * 100:.1f}%)"
+        )
+
+    else:
+
+        detected_text = (
+            f"Detected: Unknown "
+            f"({confidence * 100:.1f}%)"
+        )
+
+
+    cv2.putText(
+        display,
+        detected_text,
+        (x, y_detected),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.65,
+        (255, 200, 0),
+        2
+    )
+
+
+    # ========================================================
+    # POSTURE SCORE
+    # ========================================================
 
     score_text = (
         f"Posture score: "
@@ -328,92 +844,213 @@ while True:
     cv2.putText(
         display,
         score_text,
-        (40, 195),
+        (x, y_score),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        0.65,
         (255, 255, 255),
         2
     )
 
-    # --------------------------------------------------------
-    # Correct / Incorrect
-    # --------------------------------------------------------
 
-    if predicted_pose != "Unknown":
+    # ========================================================
+    # STATUS
+    # ========================================================
 
-        if posture_valid:
+    if (
+        sequence_state ==
+        "holding"
+    ):
 
-            status = "CORRECT POSTURE"
+        status = (
+            "CORRECT POSTURE"
+        )
 
-            cv2.putText(
-                display,
-                status,
-                (40, 250),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.0,
-                (0, 255, 0),
-                3
-            )
+        status_color = (
+            0,
+            255,
+            0
+        )
 
-        else:
 
-            status = "ADJUST POSTURE"
+    elif (
+        sequence_state ==
+        "correct_pose_adjust"
+    ):
 
-            cv2.putText(
-                display,
-                status,
-                (40, 250),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.0,
-                (0, 0, 255),
-                3
-            )
+        status = (
+            "ADJUST POSTURE"
+        )
 
-    # --------------------------------------------------------
-    # Feedback
-    # --------------------------------------------------------
+        status_color = (
+            0,
+            0,
+            255
+        )
+
+
+    elif (
+        sequence_state ==
+        "wrong_pose"
+    ):
+
+        status = (
+            "WRONG POSE"
+        )
+
+        status_color = (
+            0,
+            0,
+            255
+        )
+
+
+    elif (
+        sequence_state ==
+        "pose_complete"
+    ):
+
+        status = (
+            "POSE COMPLETE"
+        )
+
+        status_color = (
+            0,
+            255,
+            0
+        )
+
+
+    elif (
+        sequence_state ==
+        "complete"
+    ):
+
+        status = (
+            "SESSION COMPLETE"
+        )
+
+        status_color = (
+            0,
+            255,
+            0
+        )
+
+
+    else:
+
+        status = (
+            "READY"
+        )
+
+        status_color = (
+            255,
+            255,
+            0
+        )
+
 
     cv2.putText(
         display,
-        correction,
-        (40, 305),
+        status,
+        (x, y_status),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.65,
+        0.95,
+        status_color,
+        3
+    )
+
+
+    # ========================================================
+    # FEEDBACK
+    # ========================================================
+
+    # Prevent extremely long text from running across
+    # the entire webcam frame.
+
+    feedback = (
+        sequence_feedback
+    )
+
+    if len(feedback) > 65:
+
+        feedback = (
+            feedback[:62] +
+            "..."
+        )
+
+
+    cv2.putText(
+        display,
+        feedback,
+        (x, y_feedback),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.58,
         (255, 255, 0),
         2
     )
 
-    # --------------------------------------------------------
-    # Instructions
-    # --------------------------------------------------------
+
+    # ========================================================
+    # BOTTOM INSTRUCTION
+    # ========================================================
 
     cv2.putText(
         display,
-        "Press Q to quit",
-        (40, h - 40),
+        "R = Reset Sequence    Q = Quit",
+        (x, h - 40),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
         (255, 255, 255),
         2
     )
 
-    # --------------------------------------------------------
-    # Show
-    # --------------------------------------------------------
+
+    # ========================================================
+    # SHOW
+    # ========================================================
 
     cv2.imshow(
         WINDOW_NAME,
         display
     )
 
-    # --------------------------------------------------------
-    # Quit
-    # --------------------------------------------------------
 
-    key = cv2.waitKey(1) & 0xFF
+    # ========================================================
+    # KEYBOARD
+    # ========================================================
+
+    key = (
+        cv2.waitKey(1) &
+        0xFF
+    )
+
+
+    # --------------------------------------------------------
+    # QUIT
+    # --------------------------------------------------------
 
     if key == ord("q"):
+
         break
+
+
+    # --------------------------------------------------------
+    # RESET
+    # --------------------------------------------------------
+
+    if key == ord("r"):
+
+        sequence_controller.reset()
+
+        # Clear the old feedback so the new sequence starts
+        # with a clean message.
+
+        last_feedback = ""
+        last_feedback_time = 0.0
+
+        print(
+            "\nSequence reset to Pose 1."
+        )
 
 
 # ============================================================
@@ -426,4 +1063,6 @@ pose_detector.close()
 
 cv2.destroyAllWindows()
 
-print("\nApplication closed.")
+print(
+    "\nApplication closed."
+)
