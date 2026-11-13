@@ -194,6 +194,25 @@ last_feedback_time = 0.0
 
 
 # ============================================================
+# SESSION SCORE TRACKING
+# ============================================================
+
+# Stores the final score for each completed step.
+
+step_scores = {}
+
+# Temporary values used while holding the current pose.
+
+current_step_score_sum = 0.0
+
+current_step_score_count = 0
+
+# Final overall score.
+
+overall_score = 0.0
+
+
+# ============================================================
 # MAIN LOOP
 # ============================================================
 
@@ -423,6 +442,20 @@ while True:
 
 
         # ====================================================
+        # COLLECT SCORE DURING VALID HOLD
+        # ====================================================
+
+        if (
+            expected_pose_id is not None
+            and posture_valid
+        ):
+
+            current_step_score_sum += posture_score
+
+            current_step_score_count += 1
+
+
+        # ====================================================
         # SEQUENCE CONTROLLER
         # ====================================================
 
@@ -440,6 +473,49 @@ while True:
         sequence_feedback = (
             sequence_result["message"]
         )
+
+
+        # ====================================================
+        # SAVE COMPLETED POSE SCORE
+        # ====================================================
+
+        completed_step = (
+            sequence_result["completed_step"]
+        )
+
+        if completed_step is not None:
+
+            if current_step_score_count > 0:
+
+                average_score = (
+                    current_step_score_sum /
+                    current_step_score_count
+                )
+
+            else:
+
+                average_score = 0.0
+
+            step_scores[completed_step] = (
+                average_score
+            )
+
+            # Reset temporary score tracking
+            # for the next pose.
+
+            current_step_score_sum = 0.0
+
+            current_step_score_count = 0
+
+            # Calculate overall score
+            # whenever a step is completed.
+
+            if len(step_scores) > 0:
+
+                overall_score = (
+                    sum(step_scores.values()) /
+                    len(step_scores)
+                )
 
 
         # ====================================================
@@ -729,280 +805,373 @@ while True:
 
 
     # ========================================================
-    # TEXT POSITIONS
+    # FINAL SESSION REPORT
     # ========================================================
 
-    x = 40
+    if sequence_state == "complete":
 
-    y_title = 60
-    y_step = 110
-    y_expected = 150
-    y_detected = 190
-    y_score = 230
-    y_status = 285
-    y_feedback = 340
+        # Dark background using a filled rectangle.
 
-
-    # ========================================================
-    # TITLE
-    # ========================================================
-
-    cv2.putText(
-        display,
-        "SURYA NAMASKARA",
-        (x, y_title),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.2,
-        (255, 255, 255),
-        3
-    )
-
-
-    # ========================================================
-    # STEP
-    # ========================================================
-
-    expected_step = (
-        sequence_controller.get_expected_step()
-    )
-
-    step_text = (
-        f"Step {expected_step} / 12"
-    )
-
-    cv2.putText(
-        display,
-        step_text,
-        (x, y_step),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.85,
-        (255, 255, 255),
-        2
-    )
-
-
-    # ========================================================
-    # EXPECTED POSE
-    # ========================================================
-
-    expected_pose_text = (
-        f"Expected: "
-        f"{expected_pose_name}"
-    )
-
-    cv2.putText(
-        display,
-        expected_pose_text,
-        (x, y_expected),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.72,
-        (255, 255, 255),
-        2
-    )
-
-
-    # ========================================================
-    # DETECTED POSE
-    # ========================================================
-
-    if raw_pose is not None:
-
-        detected_text = (
-            f"Detected: "
-            f"{raw_pose_name} "
-            f"({confidence * 100:.1f}%)"
+        cv2.rectangle(
+            display,
+            (80, 80),
+            (w - 80, h - 80),
+            (0, 0, 0),
+            -1
         )
 
-    else:
-
-        detected_text = (
-            f"Detected: Unknown "
-            f"({confidence * 100:.1f}%)"
+        cv2.putText(
+            display,
+            "SURYA NAMASKARA COMPLETE",
+            (140, 150),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            (0, 255, 0),
+            3
         )
 
-
-    cv2.putText(
-        display,
-        detected_text,
-        (x, y_detected),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.65,
-        (255, 200, 0),
-        2
-    )
-
-
-    # ========================================================
-    # POSTURE SCORE
-    # ========================================================
-
-    score_text = (
-        f"Posture score: "
-        f"{posture_score * 100:.1f}%"
-    )
-
-    cv2.putText(
-        display,
-        score_text,
-        (x, y_score),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.65,
-        (255, 255, 255),
-        2
-    )
-
-
-    # ========================================================
-    # STATUS
-    # ========================================================
-
-    if (
-        sequence_state ==
-        "holding"
-    ):
-
-        status = (
-            "CORRECT POSTURE"
+        cv2.putText(
+            display,
+            f"Overall Score: {overall_score * 100:.1f}%",
+            (140, 210),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.95,
+            (255, 255, 255),
+            2
         )
 
-        status_color = (
-            0,
-            255,
-            0
+        # ----------------------------------------------------
+        # INDIVIDUAL POSE SCORES
+        # ----------------------------------------------------
+
+        for i in range(1, 13):
+
+            pose_score = (
+                step_scores.get(
+                    i,
+                    0.0
+                )
+            )
+
+            # Poses 1-6 in the left column,
+            # poses 7-12 in the right column.
+
+            column = 0 if i <= 6 else 1
+
+            row = (i - 1) % 6
+
+            score_x = 140 + column * 350
+
+            score_y = 270 + row * 40
+
+            cv2.putText(
+                display,
+                f"Pose {i}: {pose_score * 100:.1f}%",
+                (score_x, score_y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (255, 255, 255),
+                2
+            )
+
+        cv2.putText(
+            display,
+            "Excellent performance!",
+            (140, 540),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.85,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            display,
+            "R = Start Again    Q = Quit",
+            (140, h - 120),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 255),
+            2
         )
 
 
-    elif (
-        sequence_state ==
-        "correct_pose_adjust"
-    ):
+    if sequence_state != "complete":
 
-        status = (
-            "ADJUST POSTURE"
-        )
+        # ====================================================
+        # TEXT POSITIONS
+        # ====================================================
 
-        status_color = (
-            0,
-            0,
-            255
-        )
+        x = 40
 
-
-    elif (
-        sequence_state ==
-        "wrong_pose"
-    ):
-
-        status = (
-            "WRONG POSE"
-        )
-
-        status_color = (
-            0,
-            0,
-            255
-        )
+        y_title = 60
+        y_step = 110
+        y_expected = 150
+        y_detected = 190
+        y_score = 230
+        y_status = 285
+        y_feedback = 340
 
 
-    elif (
-        sequence_state ==
-        "pose_complete"
-    ):
+        # ====================================================
+        # TITLE
+        # ====================================================
 
-        status = (
-            "POSE COMPLETE"
-        )
-
-        status_color = (
-            0,
-            255,
-            0
+        cv2.putText(
+            display,
+            "SURYA NAMASKARA",
+            (x, y_title),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            (255, 255, 255),
+            3
         )
 
 
-    elif (
-        sequence_state ==
-        "complete"
-    ):
+        # ====================================================
+        # STEP
+        # ====================================================
 
-        status = (
-            "SESSION COMPLETE"
+        expected_step = (
+            sequence_controller.get_expected_step()
         )
 
-        status_color = (
-            0,
-            255,
-            0
+        step_text = (
+            f"Step {expected_step} / 12"
         )
 
-
-    else:
-
-        status = (
-            "READY"
-        )
-
-        status_color = (
-            255,
-            255,
-            0
+        cv2.putText(
+            display,
+            step_text,
+            (x, y_step),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.85,
+            (255, 255, 255),
+            2
         )
 
 
-    cv2.putText(
-        display,
-        status,
-        (x, y_status),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.95,
-        status_color,
-        3
-    )
+        # ====================================================
+        # EXPECTED POSE
+        # ====================================================
+
+        expected_pose_text = (
+            f"Expected: "
+            f"{expected_pose_name}"
+        )
+
+        cv2.putText(
+            display,
+            expected_pose_text,
+            (x, y_expected),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.72,
+            (255, 255, 255),
+            2
+        )
 
 
-    # ========================================================
-    # FEEDBACK
-    # ========================================================
+        # ====================================================
+        # DETECTED POSE
+        # ====================================================
 
-    # Prevent extremely long text from running across
-    # the entire webcam frame.
+        if raw_pose is not None:
 
-    feedback = (
-        sequence_feedback
-    )
+            detected_text = (
+                f"Detected: "
+                f"{raw_pose_name} "
+                f"({confidence * 100:.1f}%)"
+            )
 
-    if len(feedback) > 65:
+        else:
+
+            detected_text = (
+                f"Detected: Unknown "
+                f"({confidence * 100:.1f}%)"
+            )
+
+
+        cv2.putText(
+            display,
+            detected_text,
+            (x, y_detected),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.65,
+            (255, 200, 0),
+            2
+        )
+
+
+        # ====================================================
+        # POSTURE SCORE
+        # ====================================================
+
+        score_text = (
+            f"Posture score: "
+            f"{posture_score * 100:.1f}%"
+        )
+
+        cv2.putText(
+            display,
+            score_text,
+            (x, y_score),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.65,
+            (255, 255, 255),
+            2
+        )
+
+
+        # ====================================================
+        # STATUS
+        # ====================================================
+
+        if (
+            sequence_state ==
+            "holding"
+        ):
+
+            status = (
+                "CORRECT POSTURE"
+            )
+
+            status_color = (
+                0,
+                255,
+                0
+            )
+
+
+        elif (
+            sequence_state ==
+            "correct_pose_adjust"
+        ):
+
+            status = (
+                "ADJUST POSTURE"
+            )
+
+            status_color = (
+                0,
+                0,
+                255
+            )
+
+
+        elif (
+            sequence_state ==
+            "wrong_pose"
+        ):
+
+            status = (
+                "WRONG POSE"
+            )
+
+            status_color = (
+                0,
+                0,
+                255
+            )
+
+
+        elif (
+            sequence_state ==
+            "pose_complete"
+        ):
+
+            status = (
+                "POSE COMPLETE"
+            )
+
+            status_color = (
+                0,
+                255,
+                0
+            )
+
+
+        elif (
+            sequence_state ==
+            "complete"
+        ):
+
+            status = (
+                "SESSION COMPLETE"
+            )
+
+            status_color = (
+                0,
+                255,
+                0
+            )
+
+
+        else:
+
+            status = (
+                "READY"
+            )
+
+            status_color = (
+                255,
+                255,
+                0
+            )
+
+
+        cv2.putText(
+            display,
+            status,
+            (x, y_status),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.95,
+            status_color,
+            3
+        )
+
+
+        # ====================================================
+        # FEEDBACK
+        # ====================================================
+
+        # Prevent extremely long text from running across
+        # the entire webcam frame.
 
         feedback = (
-            feedback[:62] +
-            "..."
+            sequence_feedback
+        )
+
+        if len(feedback) > 65:
+
+            feedback = (
+                feedback[:62] +
+                "..."
+            )
+
+
+        cv2.putText(
+            display,
+            feedback,
+            (x, y_feedback),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.58,
+            (255, 255, 0),
+            2
         )
 
 
-    cv2.putText(
-        display,
-        feedback,
-        (x, y_feedback),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.58,
-        (255, 255, 0),
-        2
-    )
+        # ====================================================
+        # BOTTOM INSTRUCTION
+        # ====================================================
 
-
-    # ========================================================
-    # BOTTOM INSTRUCTION
-    # ========================================================
-
-    cv2.putText(
-        display,
-        "R = Reset Sequence    Q = Quit",
-        (x, h - 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 255),
-        2
-    )
+        cv2.putText(
+            display,
+            "R = Reset Sequence    Q = Quit",
+            (x, h - 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2
+        )
 
 
     # ========================================================
@@ -1047,6 +1216,16 @@ while True:
 
         last_feedback = ""
         last_feedback_time = 0.0
+
+        # Reset session scores.
+
+        step_scores = {}
+
+        current_step_score_sum = 0.0
+
+        current_step_score_count = 0
+
+        overall_score = 0.0
 
         print(
             "\nSequence reset to Pose 1."
