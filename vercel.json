@@ -8,9 +8,9 @@
     },
 
     "backend": {
-      "root": "backend/",
+      "root": "./",
       "framework": "fastapi",
-      "entrypoint": "server:app"
+      "entrypoint": "backend/server.py"
     }
   },
 
@@ -21,28 +21,24 @@
         "service": "backend"
       }
     },
-
     {
       "source": "/api/(.*)",
       "destination": {
         "service": "backend"
       }
     },
-
     {
       "source": "/ws",
       "destination": {
         "service": "backend"
       }
     },
-
     {
       "source": "/ws/(.*)",
       "destination": {
         "service": "backend"
       }
     },
-
     {
       "source": "/(.*)",
       "destination": {

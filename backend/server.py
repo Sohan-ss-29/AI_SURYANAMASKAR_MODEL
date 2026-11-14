@@ -20,7 +20,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 
 
-from ai_processor import AIProcessor
+from backend.ai_processor import AIProcessor
 from inference.sequence_controller import SequenceController
 
 from inference.session_manager import SessionManager
