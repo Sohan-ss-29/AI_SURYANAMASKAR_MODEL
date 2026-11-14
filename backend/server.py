@@ -2,22 +2,29 @@ import base64
 import cv2
 import numpy as np
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import WebSocket, WebSocketDisconnect
-
-from backend.ai_processor import AIProcessor
-from inference.sequence_controller import SequenceController
-
-from inference.session_manager import SessionManager
-
 import os
+import sys
 
 BASE_DIR = os.path.dirname(
     os.path.dirname(
         os.path.abspath(__file__)
     )
 )
+
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import WebSocket, WebSocketDisconnect
+
+
+
+from ai_processor import AIProcessor
+from inference.sequence_controller import SequenceController
+
+from inference.session_manager import SessionManager
+
 
 # ============================================================
 # APP
