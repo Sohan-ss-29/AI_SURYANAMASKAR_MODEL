@@ -1,17 +1,20 @@
 # ============================================================
 # Render.com Deployment Configuration
 # ============================================================
-# This file tells Render how to build and run the backend.
-# Render will auto-detect this file from the GitHub repo root.
+# NOTE: Render now requires a card even for the free tier.
+# This project has been moved to Hugging Face Spaces instead.
+# See HF_README.md and the Dockerfile (port 7860).
+#
+# If you still want to use Render (paid), uncomment below:
 # ============================================================
 
-services:
-  - type: web
-    name: ai-surya-backend
-    env: docker
-    dockerfilePath: ./Dockerfile
-    plan: free
-    healthCheckPath: /health
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
+# services:
+#   - type: web
+#     name: ai-surya-backend
+#     env: docker
+#     dockerfilePath: ./Dockerfile
+#     plan: free
+#     healthCheckPath: /health
+#     envVars:
+#       - key: PYTHONUNBUFFERED
+#         value: "1"

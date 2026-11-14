@@ -1,8 +1,9 @@
 # ============================================================
-# Surya Namaskara AI Backend — Docker Image
+# Surya Namaskara AI Backend — Hugging Face Spaces Docker Image
 # ============================================================
-# Base: Python 3.11 slim (matches local dev; avoids TF/MP
-# compatibility issues that exist on 3.12 for these versions)
+# Base: Python 3.11 slim
+# Port: 7860 (required by Hugging Face Spaces)
+# User: non-root uid 1000 (required by Hugging Face Spaces)
 # ============================================================
 
 FROM python:3.11-slim
@@ -22,38 +23,46 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ============================================================
-# WORKING DIRECTORY
+# NON-ROOT USER (Hugging Face Spaces requirement)
 # ============================================================
 
-WORKDIR /app
+RUN useradd -m -u 1000 user
+
+WORKDIR /home/user/app
 
 # ============================================================
 # PYTHON DEPENDENCIES
-# Install before copying source to leverage Docker layer cache
 # ============================================================
 
-COPY backend/requirements.txt ./requirements.txt
+COPY --chown=user backend/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ============================================================
 # APPLICATION SOURCE
-# Only copy what is needed at runtime — no training data,
-# no .keras/.h5 weights (only the SavedModel is used)
 # ============================================================
 
-COPY backend/   ./backend/
-COPY inference/ ./inference/
-COPY models/suryanamaskar_mobilenetv2_savedmodel/ \
+COPY --chown=user backend/   ./backend/
+COPY --chown=user inference/ ./inference/
+COPY --chown=user models/suryanamaskar_mobilenetv2_savedmodel/ \
      ./models/suryanamaskar_mobilenetv2_savedmodel/
-COPY models/class_names.json ./models/class_names.json
+COPY --chown=user models/class_names.json ./models/class_names.json
+
+# ============================================================
+# ENVIRONMENT & USER SWITCH
+# ============================================================
+
+USER user
+
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 7860
 
 # ============================================================
 # START SERVER
-# Render provides $PORT at runtime (default 10000)
-# uvicorn is started as a module so Python resolves
-# `backend.server` from WORKDIR /app correctly
 # ============================================================
 
-CMD uvicorn backend.server:app --host 0.0.0.0 --port ${PORT:-10000}
+CMD uvicorn backend.server:app --host 0.0.0.0 --port 7860
