@@ -19,7 +19,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 
 
-from ai_processor import AIProcessor
+from backend.ai_processor import AIProcessor
 from inference.sequence_controller import SequenceController
 
 from inference.session_manager import SessionManager
@@ -44,7 +44,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://aisuryanamaskarmodel.vercel.app",
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],

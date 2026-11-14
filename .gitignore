@@ -39,3 +39,14 @@ logs/
 
 # Dataset review images
 review/
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.env
+
+# Session history (ephemeral on Render free tier)
+session_history/
+
+# Task tracking
+task.md

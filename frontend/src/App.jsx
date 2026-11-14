@@ -277,7 +277,7 @@ function HistoryPage() {
 
   useEffect(() => {
 
-    fetch("http://localhost:8000/history")
+    fetch("https://ai-surya-backend.onrender.com/history")
       .then(response => response.json())
       .then(data => {
 
@@ -483,13 +483,9 @@ function PracticePage({ onHome }) {
      BACKEND URL
   ============================================================ */
 
-  const WEBSOCKET_PROTOCOL =
-      window.location.protocol === "https:"
-          ? "wss:"
-          : "ws:";
+  const BACKEND_HOST = "ai-surya-backend.onrender.com";
 
-  const WEBSOCKET_URL =
-      `${WEBSOCKET_PROTOCOL}//${window.location.host}/ws/practice`;
+  const WEBSOCKET_URL = `wss://${BACKEND_HOST}/ws/practice`;
 
 
 

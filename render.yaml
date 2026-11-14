@@ -1,0 +1,17 @@
+# ============================================================
+# Render.com Deployment Configuration
+# ============================================================
+# This file tells Render how to build and run the backend.
+# Render will auto-detect this file from the GitHub repo root.
+# ============================================================
+
+services:
+  - type: web
+    name: ai-surya-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
