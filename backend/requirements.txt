@@ -1,13 +1,7 @@
 fastapi
-uvicorn
 websockets
 
 tensorflow-cpu==2.17.0
 mediapipe==0.10.14
 numpy==1.26.4
-opencv-python
-
-pandas
-matplotlib
-scikit-learn
-Pillow
+opencv-python-headless
