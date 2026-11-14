@@ -315,6 +315,16 @@ function PracticePage({ onHome }) {
 
   });
 
+  const [sequence, setSequence] = useState({
+    expected_step: 1,
+    expected_pose: 1,
+    sequence_state: "waiting",
+    sequence_message: "Perform Pose 1.",
+    hold_elapsed: 0,
+    completed_step: null,
+    session_complete: false
+  });
+
 
 
   /* ============================================================
@@ -592,9 +602,31 @@ function PracticePage({ onHome }) {
         }
 
 
-        setAiResult(
-          result
-        );
+        setAiResult(result);
+
+        setSequence({
+          expected_step:
+            result.expected_step ?? 1,
+
+          expected_pose:
+            result.expected_pose ?? 1,
+
+          sequence_state:
+            result.sequence_state ?? "waiting",
+
+          sequence_message:
+            result.sequence_message ??
+            "Perform Pose 1.",
+
+          hold_elapsed:
+            result.hold_elapsed ?? 0,
+
+          completed_step:
+            result.completed_step,
+
+          session_complete:
+            result.session_complete ?? false
+        });
 
       }
 
@@ -787,7 +819,7 @@ function PracticePage({ onHome }) {
           base64Image
         );
 
-      }, 200);
+      }, 300);
 
   };
 
@@ -1003,10 +1035,17 @@ function PracticePage({ onHome }) {
      DISPLAY VALUES
   ============================================================ */
 
+  const displayPoseId =
+    aiResult.posture_valid
+      ? aiResult.pose_id
+      : null;
+
   const poseName =
-    getPoseDisplayName(
-      aiResult.pose_name
-    );
+    displayPoseId
+      ? getPoseDisplayName(
+          aiResult.pose_name
+        )
+      : "Waiting for pose";
 
 
   const classificationPercent =
@@ -1103,6 +1142,8 @@ function PracticePage({ onHome }) {
 
       <div className="practice-grid">
 
+  <div className="practice-main">
+
 
         {/* ==================================================
             CAMERA
@@ -1188,9 +1229,9 @@ function PracticePage({ onHome }) {
 
                 <div className="camera-step">
 
-                  {aiResult.pose_id
-                    ? `Pose ${aiResult.pose_id}`
-                    : "Detecting..."}
+                  {displayPoseId
+                    ? `Pose ${displayPoseId}`
+                    : "Waiting..."}
 
                 </div>
 
@@ -1202,6 +1243,90 @@ function PracticePage({ onHome }) {
 
         </div>
 
+
+
+    {/* SESSION PROGRESS */}
+
+    <div className="info-card session-progress-card">
+
+      <div className="hold-header">
+
+        <span className="small-label">
+          SESSION PROGRESS
+        </span>
+
+        <span>
+          {sequence.expected_step} / 12
+        </span>
+
+      </div>
+
+      <div className="step-progress">
+
+        {Array.from({
+          length: 12
+        }).map((_, index) => (
+
+          <div
+            key={index}
+            className={
+              index ===
+              (sequence.expected_step - 1)
+                ? "step-dot active"
+                : index <
+                  (sequence.expected_step - 1)
+                  ? "step-dot completed"
+                  : "step-dot"
+            }
+          >
+            {index + 1}
+          </div>
+
+        ))}
+
+      </div>
+
+      <div className="hold-section">
+
+        <div className="hold-header">
+
+          <span className="small-label">
+            HOLD PROGRESS
+          </span>
+
+          <span>
+            {Math.min(
+              sequence.hold_elapsed,
+              2
+            ).toFixed(1)} / 2.0 sec
+          </span>
+
+        </div>
+
+        <div className="progress-track">
+
+          <div
+            className="progress-fill"
+            style={{
+              width:
+                `${Math.min(
+                  (sequence.hold_elapsed / 2) * 100,
+                  100
+                )}%`
+            }}
+          />
+
+        </div>
+
+      </div>
+
+      <div className="sequence-message">
+        {sequence.sequence_message}
+      </div>
+
+    </div>
+
+  </div>
 
 
         {/* ==================================================
@@ -1226,9 +1351,9 @@ function PracticePage({ onHome }) {
 
                 <h2>
 
-                  {aiResult.pose_id
-                    ? `Pose ${aiResult.pose_id}`
-                    : "Waiting..."}
+                  {displayPoseId
+                    ? `Pose ${displayPoseId}`
+                    : "Waiting for pose"}
 
                 </h2>
 
@@ -1237,9 +1362,9 @@ function PracticePage({ onHome }) {
 
               <div className="step-number">
 
-                {aiResult.pose_id
+                {displayPoseId
                   ? String(
-                      aiResult.pose_id
+                      displayPoseId
                     ).padStart(
                       2,
                       "0"
@@ -1326,7 +1451,7 @@ function PracticePage({ onHome }) {
                   {aiResult.posture_valid
                     ? "Good posture"
                     : aiResult.pose_detected
-                      ? "Adjust your posture"
+                      ? "Waiting for correct pose"
                       : "Ready to begin"}
 
                 </h3>
@@ -1415,85 +1540,27 @@ function PracticePage({ onHome }) {
 
 
 
-          {/* SESSION PROGRESS */}
+    {/* CURRENT POSE SCORE */}
 
-          <div className="info-card">
+    <div className="score-card">
 
-            <div className="hold-header">
+      <div>
 
-              <span className="small-label">
-                SESSION PROGRESS
-              </span>
+        <span className="small-label">
+          CURRENT POSE SCORE
+        </span>
 
+        <div className="score">
+          {postureScorePercent}%
+        </div>
 
-              <span>
-                1 / 12
-              </span>
+      </div>
 
-            </div>
+      <div className="score-ring">
+        {postureScorePercent}
+      </div>
 
-
-            <div className="step-progress">
-
-              {Array.from({
-                length: 12
-              }).map((_, index) => (
-
-                <div
-                  key={index}
-                  className={
-                    index ===
-                    (
-                      (
-                        aiResult.pose_id ||
-                        1
-                      ) - 1
-                    )
-                      ? "step-dot active"
-                      : "step-dot"
-                  }
-                >
-
-                  {index + 1}
-
-                </div>
-
-              ))}
-
-            </div>
-
-          </div>
-
-
-
-          {/* CURRENT SCORE */}
-
-          <div className="score-card">
-
-            <div>
-
-              <span className="small-label">
-                CURRENT POSE SCORE
-              </span>
-
-
-              <div className="score">
-
-                {postureScorePercent}%
-
-              </div>
-
-            </div>
-
-
-            <div className="score-ring">
-
-              {postureScorePercent}
-
-            </div>
-
-          </div>
-
+    </div>
 
 
           {/* RESTART */}
@@ -1515,7 +1582,7 @@ function PracticePage({ onHome }) {
 
         </div>
 
-      </div>
+  </div>
 
     </section>
 

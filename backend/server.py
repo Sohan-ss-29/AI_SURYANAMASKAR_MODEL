@@ -2,10 +2,12 @@ import base64
 import cv2
 import numpy as np
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import WebSocket, WebSocketDisconnect
 
 from backend.ai_processor import AIProcessor
+from inference.sequence_controller import SequenceController
 
 
 # ============================================================
@@ -26,8 +28,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        "http://localhost:5173"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -36,18 +37,19 @@ app.add_middleware(
 
 
 # ============================================================
-# AI
+# AI PROCESSOR
 # ============================================================
 
 ai = AIProcessor()
 
 
 # ============================================================
-# HTTP ROUTES
+# HEALTH
 # ============================================================
 
 @app.get("/")
 def root():
+
     return {
         "status": "online",
         "message": "Surya AI backend is running"
@@ -56,6 +58,7 @@ def root():
 
 @app.get("/health")
 def health():
+
     return {
         "status": "healthy",
         "ai": "ready"
@@ -69,77 +72,133 @@ def health():
 @app.websocket("/ws/practice")
 async def practice(websocket: WebSocket):
 
-    print("\n========================================")
-    print("WebSocket connection attempt received")
-    print("========================================")
+    print("WebSocket connection attempt received.")
 
     await websocket.accept()
 
     print("Browser connected to AI practice.")
 
-    try:
+    # --------------------------------------------------------
+    # Create a separate sequence controller for this session
+    # --------------------------------------------------------
 
-        await websocket.send_json({
-            "type": "connection",
-            "success": True,
-            "message": "AI WebSocket connected"
-        })
+    sequence = SequenceController(
+        total_poses=12,
+        hold_time=2.0,
+        wrong_pose_frames=4,
+        hold_grace_time=0.8
+    )
+
+    await websocket.send_json({
+        "success": True,
+        "message": "WebSocket connected successfully"
+    })
+
+    try:
 
         while True:
 
+            # =================================================
+            # RECEIVE IMAGE
+            # =================================================
+
             data = await websocket.receive_text()
 
-            print(
-                f"Received frame: {len(data)} characters"
+            # =================================================
+            # DECODE IMAGE
+            # =================================================
+
+            image_data = base64.b64decode(
+                data
             )
 
-            try:
+            image_array = np.frombuffer(
+                image_data,
+                dtype=np.uint8
+            )
 
-                image_data = base64.b64decode(
-                    data
+            frame = cv2.imdecode(
+                image_array,
+                cv2.IMREAD_COLOR
+            )
+
+            # =================================================
+            # RUN AI
+            # =================================================
+
+            result = ai.process_frame(
+                frame,
+                expected_pose_id=sequence.get_expected_pose()
+            )
+
+            # =================================================
+            # AI DID NOT DETECT PERSON
+            # =================================================
+
+            if not result.get(
+                "pose_detected",
+                False
+            ):
+
+                sequence_result = sequence.update(
+                    raw_pose=None,
+                    posture_valid=False
                 )
 
-                image_array = np.frombuffer(
-                    image_data,
-                    dtype=np.uint8
+            # =================================================
+            # AI DETECTED PERSON
+            # =================================================
+
+            else:
+
+                sequence_result = sequence.update(
+                    raw_pose=result["pose_id"],
+                    posture_valid=result["posture_valid"]
                 )
 
-                frame = cv2.imdecode(
-                    image_array,
-                    cv2.IMREAD_COLOR
-                )
+            # =================================================
+            # ADD SEQUENCE INFORMATION
+            # =================================================
 
-                if frame is None:
+            result["expected_step"] = (
+                sequence_result["expected_step"]
+            )
 
-                    await websocket.send_json({
-                        "success": False,
-                        "message": "Invalid image frame"
-                    })
+            result["expected_pose"] = (
+                sequence_result["expected_pose"]
+            )
 
-                    continue
+            result["sequence_state"] = (
+                sequence_result["state"]
+            )
 
-                result = ai.process_frame(
-                    frame
-                )
+            result["sequence_message"] = (
+                sequence_result["message"]
+            )
 
-                await websocket.send_json(
-                    result
-                )
+            result["hold_elapsed"] = (
+                sequence_result["hold_elapsed"]
+            )
 
-            except Exception as frame_error:
+            result["completed_step"] = (
+                sequence_result["completed_step"]
+            )
 
-                print(
-                    "Frame processing error:",
-                    repr(frame_error)
-                )
+            result["session_complete"] = (
+                sequence_result["session_complete"]
+            )
 
-                await websocket.send_json({
-                    "success": False,
-                    "message": "Frame processing failed"
-                })
+            # =================================================
+            # SEND RESULT TO FRONTEND
+            # =================================================
+
+            await websocket.send_json(
+                result
+            )
 
     except WebSocketDisconnect:
 
+        print("")
         print("Browser disconnected.")
 
     except Exception as e:
@@ -151,5 +210,5 @@ async def practice(websocket: WebSocket):
 
         try:
             await websocket.close()
-        except Exception:
+        except:
             pass
