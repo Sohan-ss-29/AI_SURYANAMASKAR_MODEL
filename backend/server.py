@@ -9,6 +9,15 @@ from fastapi import WebSocket, WebSocketDisconnect
 from backend.ai_processor import AIProcessor
 from inference.sequence_controller import SequenceController
 
+from inference.session_manager import SessionManager
+
+import os
+
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
 
 # ============================================================
 # APP
@@ -66,6 +75,20 @@ def health():
 
 
 # ============================================================
+# HISTORY
+# ============================================================
+
+@app.get("/history")
+def history():
+
+    manager = SessionManager(BASE_DIR)
+
+    return {
+        "sessions": manager.load_history()
+    }
+
+
+# ============================================================
 # WEBSOCKET
 # ============================================================
 
@@ -88,6 +111,7 @@ async def practice(websocket: WebSocket):
         wrong_pose_frames=4,
         hold_grace_time=0.8
     )
+    session_manager = SessionManager(BASE_DIR)
 
     await websocket.send_json({
         "success": True,
@@ -142,7 +166,7 @@ async def practice(websocket: WebSocket):
 
                 sequence_result = sequence.update(
                     raw_pose=None,
-                    posture_valid=False
+                    posture_valid=False 
                 )
 
             # =================================================
@@ -155,6 +179,25 @@ async def practice(websocket: WebSocket):
                     raw_pose=result["pose_id"],
                     posture_valid=result["posture_valid"]
                 )
+
+                if sequence_result["completed_step"] is not None:
+
+                    completed_step = (
+                        sequence_result["completed_step"]
+                    )
+
+                    session_manager.record_pose(
+                        completed_step,
+                        result.get("posture_score", 0.0)
+                    )
+
+                if sequence_result["session_complete"]:
+
+                    session = session_manager.save_session()
+
+                    result["session_saved"] = True
+
+                    result["session"] = session
 
             # =================================================
             # ADD SEQUENCE INFORMATION

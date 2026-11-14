@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   Activity,
@@ -226,19 +225,7 @@ function App() {
       ===================================================== */}
 
       {page === "history" && (
-
-        <section className="practice-page">
-
-          <h1>
-            Session History
-          </h1>
-
-          <p>
-            Your completed Surya Namaskara sessions will appear here.
-          </p>
-
-        </section>
-
+        <HistoryPage />
       )}
 
 
@@ -274,6 +261,171 @@ function App() {
       )}
 
     </div>
+  );
+}
+
+
+
+/* ============================================================
+   HISTORY PAGE
+============================================================ */
+
+function HistoryPage() {
+
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+
+    fetch("http://localhost:8000/history")
+      .then(response => response.json())
+      .then(data => {
+
+        setSessions(
+          data.sessions || []
+        );
+
+        setLoading(false);
+
+      })
+      .catch(error => {
+
+        console.error(
+          "Failed to load history:",
+          error
+        );
+
+        setLoading(false);
+
+      });
+
+  }, []);
+
+  return (
+    <section className="practice-page">
+
+      <div className="history-header">
+
+        <h1>
+          Session History
+        </h1>
+
+        <p>
+          Your completed Surya Namaskara sessions.
+        </p>
+
+      </div>
+
+
+      {loading && (
+        <p>
+          Loading sessions...
+        </p>
+      )}
+
+
+      {!loading &&
+        sessions.length === 0 && (
+
+          <div className="info-card">
+
+            <h2>
+              No sessions yet
+            </h2>
+
+            <p>
+              Complete a Surya Namaskara session
+              to see your results here.
+            </p>
+
+          </div>
+
+        )}
+
+
+      {!loading &&
+        sessions.length > 0 && (
+
+          <div className="history-list">
+
+            {sessions
+              .slice()
+              .reverse()
+              .map((session, index) => (
+
+                <div
+                  className="info-card history-card"
+                  key={index}
+                >
+
+                  <div className="history-top">
+
+                    <div>
+
+                      <span className="small-label">
+                        SESSION
+                      </span>
+
+                      <h2>
+                        {session.date}
+                      </h2>
+
+                      <p>
+                        {session.time}
+                      </p>
+
+                    </div>
+
+
+                    <div className="history-score">
+
+                      <span>
+                        {session.overall_score}%
+                      </span>
+
+                      <small>
+                        Overall Score
+                      </small>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="history-details">
+
+                    <div>
+                      <strong>
+                        {session.poses_completed}/12
+                      </strong>
+
+                      <span>
+                        Poses
+                      </span>
+                    </div>
+
+
+                    <div>
+                      <strong>
+                        {session.duration}
+                      </strong>
+
+                      <span>
+                        Duration
+                      </span>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+          </div>
+
+        )}
+
+    </section>
   );
 }
 
@@ -1086,8 +1238,7 @@ function PracticePage({ onHome }) {
 
           <div className="practice-label">
 
-            <span className="live-dot"></span>
-
+            <span className="pulse-ring"></span>
             AI PRACTICE SESSION
 
           </div>
@@ -1112,6 +1263,73 @@ function PracticePage({ onHome }) {
           Exit Session
         </button>
 
+      </div>
+
+
+
+      {/* ==================================================
+          PRACTICE TIPS
+      ================================================== */}
+
+      <div className="practice-tips">
+        <div className="practice-tips-header">
+          <div className="practice-tips-icon">ⓘ</div>
+
+          <div>
+            <h3>Before You Start</h3>
+            <p>Follow these tips for better posture detection.</p>
+          </div>
+        </div>
+
+        <div className="practice-tips-grid">
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Wear fitted clothing</strong>
+              <p>Avoid loose or baggy clothes that hide your body posture.</p>
+            </div>
+          </div>
+
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Use good lighting</strong>
+              <p>Avoid strong light or bright windows directly behind you.</p>
+            </div>
+          </div>
+
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Use a plain background</strong>
+              <p>Keep the area behind you clear and uncluttered.</p>
+            </div>
+          </div>
+
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Position your camera correctly</strong>
+              <p>Make sure your head to at least your knees are visible.</p>
+            </div>
+          </div>
+
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Keep the camera stable</strong>
+              <p>Place your camera on a steady surface at a suitable height.</p>
+            </div>
+          </div>
+
+          <div className="practice-tip">
+            <span></span>
+            <div>
+              <strong>Stay centered</strong>
+              <p>Remain centered in the camera frame throughout the session.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
 
