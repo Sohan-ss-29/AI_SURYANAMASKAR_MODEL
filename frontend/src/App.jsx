@@ -483,11 +483,13 @@ function PracticePage({ onHome }) {
      BACKEND URL
   ============================================================ */
 
-  const BACKEND_HOST =
-    window.location.hostname || "localhost";
+  const WEBSOCKET_PROTOCOL =
+      window.location.protocol === "https:"
+          ? "wss:"
+          : "ws:";
 
   const WEBSOCKET_URL =
-    `ws://${BACKEND_HOST}:8000/ws/practice`;
+      `${WEBSOCKET_PROTOCOL}//${window.location.host}/ws/practice`;
 
 
 

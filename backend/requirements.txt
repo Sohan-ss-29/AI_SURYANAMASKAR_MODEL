@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+websockets
+
+tensorflow==2.13.1
+mediapipe==0.10.10
+numpy==1.24.3
+opencv-python
+
+pandas
+matplotlib
+scikit-learn
+Pillow
