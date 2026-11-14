@@ -1,6 +1,6 @@
 import base64
 import numpy as np
-
+import cv2
 import os
 import sys
 
@@ -19,7 +19,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 
 
-from backend.ai_processor import AIProcessor
+from ai_processor import AIProcessor
 from inference.sequence_controller import SequenceController
 
 from inference.session_manager import SessionManager
