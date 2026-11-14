@@ -1,3 +1,14 @@
+---
+title: AI Surya Backend
+emoji: 🧘
+colorFrom: orange
+colorTo: yellow
+sdk: gradio
+sdk_version: "4.44.0"
+app_file: app.py
+pinned: false
+---
+
 # AI-Based Surya Namaskara Correction System
 
 An academic computer-vision project that combines **MobileNetV2 pose classification** and **MediaPipe Pose landmark analysis** as the foundation for a real-time Surya Namaskara posture-assistance system.

@@ -277,7 +277,7 @@ function HistoryPage() {
 
   useEffect(() => {
 
-    fetch("https://YOUR_HF_USERNAME-ai-surya-backend.hf.space/history")
+    fetch("https://sohansuhas-ai-surya-backend.hf.space/history")
       .then(response => response.json())
       .then(data => {
 
@@ -484,7 +484,7 @@ function PracticePage({ onHome }) {
   ============================================================ */
 
   // Hugging Face Space URL: {hf-username}-{space-name}.hf.space
-  const BACKEND_HOST = "YOUR_HF_USERNAME-ai-surya-backend.hf.space";
+  const BACKEND_HOST = "sohansuhas-ai-surya-backend.hf.space";
 
   const WEBSOCKET_URL = `wss://${BACKEND_HOST}/ws/practice`;
 
