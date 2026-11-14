@@ -8,9 +8,9 @@
     },
 
     "backend": {
-      "root": "./",
+      "root": "backend/",
       "framework": "fastapi",
-      "entrypoint": "backend/server.py"
+      "entrypoint": "server:app"
     }
   },
 
